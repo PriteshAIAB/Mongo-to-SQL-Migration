@@ -1,0 +1,29 @@
+{
+  "name": "mongo-to-mssql-migrator",
+  "version": "1.0.0",
+  "description": "Production-ready interactive CLI for MongoDB to MSSQL migration with schema inference and bulk inserts",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "migrate": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "mongodb",
+    "mssql",
+    "migration",
+    "etl",
+    "cli"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "dotenv": "^16.4.5",
+    "inquirer": "^8.2.6",
+    "mongodb": "^6.9.0",
+    "mssql": "^11.0.1",
+    "ora": "^5.4.1"
+  }
+}
