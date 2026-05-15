@@ -1,6 +1,6 @@
 const chalk = require('chalk');
 const ora = require('ora');
-const { reserveSrnoColumnName, normalizeIdColumn } = require('./sql.service');
+const { reserveSurrogatePkColumnName, normalizeIdColumn } = require('./sql.service');
 
 /**
  * @typedef {'overwrite'|'append'|'skip'} MigrationMode
@@ -176,12 +176,11 @@ class MigrationService {
       };
     }
 
-    // Reserve `<tableName>_srno` for the auto-injected IDENTITY primary key.
-    // If a Mongo field happens to flatten to that exact SQL name, rename it
-    // here so both the CREATE TABLE DDL and the per-row bulk payload stay
-    // consistent. Also pin `_id` to VARCHAR(64) so the UNIQUE constraint is
-    // valid and the bulk driver agrees with the DDL.
-    reserveSrnoColumnName(tableName, columns);
+    // Reserve `RID` for the auto-injected IDENTITY primary key. If a Mongo field
+    // flattens to that exact SQL name, rename it so DDL and bulk payloads match.
+    // Also pin `_id` to VARCHAR(64) so the UNIQUE constraint is valid and the
+    // bulk driver agrees with the DDL.
+    reserveSurrogatePkColumnName(columns);
     normalizeIdColumn(columns);
 
     const ddl = this.sql.buildCreateTableDdl(tableName, columns);

@@ -24,13 +24,15 @@ function bracket(name) {
   return `[${String(name).replace(/]/g, ']]')}]`;
 }
 
+/** Fixed SQL identifier for the BIGINT IDENTITY surrogate PK on every migrated table. */
+const SURROGATE_PK_COLUMN = 'RID';
+
 /**
- * SQL name of the auto-injected surrogate primary key column for a table.
- * @param {string} tableName
+ * SQL name of the auto-injected surrogate primary key column (same on all tables for mapping).
  * @returns {string}
  */
-function srnoColumnName(tableName) {
-  return `${assertSafeTableName(tableName)}_srno`;
+function surrogatePkColumnName() {
+  return SURROGATE_PK_COLUMN;
 }
 
 /**
@@ -54,15 +56,14 @@ function normalizeIdColumn(columns) {
 }
 
 /**
- * If an inferred column collides with the reserved `<tableName>_srno` name,
- * rename it (and any cascade collisions) so the IDENTITY column stays unique.
+ * If an inferred column collides with the reserved `RID` name, rename it
+ * (and any cascade collisions) so the IDENTITY column stays unique.
  * Mutates and returns the same columns array.
- * @param {string} tableName
  * @param {{ sqlName: string }[]} columns
  * @returns {{ sqlName: string }[]}
  */
-function reserveSrnoColumnName(tableName, columns) {
-  const reserved = srnoColumnName(tableName);
+function reserveSurrogatePkColumnName(columns) {
+  const reserved = SURROGATE_PK_COLUMN;
   const used = new Set(columns.map((c) => c.sqlName));
 
   for (const col of columns) {
@@ -155,7 +156,7 @@ class SqlService {
   }
 
   /**
-   * Build CREATE TABLE DDL with an auto-injected `<tableName>_srno` IDENTITY
+   * Build CREATE TABLE DDL with an auto-injected `RID` BIGINT IDENTITY
    * primary key and a UNIQUE constraint on `_id` for fast post-migration
    * foreign-key resolution. All inferred columns are emitted as NOT NULL;
    * missing Mongo values are substituted with safe defaults at bulk-insert
@@ -171,11 +172,11 @@ class SqlService {
    */
   buildCreateTableDdl(tableName, columns) {
     const t = assertSafeTableName(tableName);
-    reserveSrnoColumnName(t, columns);
+    reserveSurrogatePkColumnName(columns);
     normalizeIdColumn(columns);
 
     const lines = [
-      `${bracket(srnoColumnName(t))} BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY`,
+      `${bracket(SURROGATE_PK_COLUMN)} BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY`,
     ];
     for (const c of columns) {
       const trailing = c.sqlName === '_id' ? 'NOT NULL UNIQUE' : 'NOT NULL';
@@ -230,7 +231,8 @@ module.exports = {
   SqlService,
   assertSafeTableName,
   bracket,
-  srnoColumnName,
-  reserveSrnoColumnName,
+  SURROGATE_PK_COLUMN,
+  surrogatePkColumnName,
+  reserveSurrogatePkColumnName,
   normalizeIdColumn,
 };
